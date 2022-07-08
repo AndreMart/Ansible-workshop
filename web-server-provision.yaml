@@ -1,0 +1,63 @@
+- hosts: web-server
+  remote_user: ubuntu
+  become: true
+  gather_facts: no
+
+
+  tasks:
+    - name: Update all packages
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+
+    - name: Install dependencies
+      apt:
+        pkg:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - git
+   
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker
+          - docker-compose
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+
+    - name: Clone git repo
+      ansible.builtin.git:
+        repo: https://github.com/AndreMart/DockerWorkshop.git
+        dest: /home/ubuntu/app
+        single_branch: yes
+        version: master
+
+    - name: Build local docker image
+      ansible.builtin.shell: sudo docker build -t flaskapi .
+      args:
+        chdir: /home/ubuntu/app
+
+    - name: Run docker app
+      ansible.builtin.shell: sudo docker-compose up -d
+      args:
+        chdir: /home/ubuntu/app
+      
+        
